@@ -8,14 +8,11 @@ from core import DataBase
 
 #db = DataBase(provider=psycopg2, host='localhost',user='jm', passwd='root',db='jm')
 #db = DataBase(provider=MySQLdb, host='localhost',user='root', passwd='root',db='jm')
-db = DataBase(provider=sqlite3, db='MusicaInYou.db')
+db = DataBase(provider=sqlite3, db='jm.db')
 
-print [u.album for u in db.Table("Songs").filter("id > 15").
-       filter("year = 2000").order_by("song").rows]
+print [u.name for u in db.Table("Person").filter("id > 0").filter("name = 'jm'").order_by("name").rows]
 
-print [u.song for u in db.Table("Songs").filter("id = 1").rows]
+print [u for u in db.Table("Person").filter("id = 1").rows]
 
-print [c for c in db.Table("Songs").columns]
+print [c for c in db.Table("Person").columns]
 
-
-[u'essential selection vol. one', u'The Beatles 1', u'Please']

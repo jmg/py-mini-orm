@@ -1,70 +1,99 @@
 # -*- coding: utf-8 -*-
+
 import MySQLdb
+import sqlite3
+import psycopg2
 
 class DataBase(object):
 
-    def __init__(self, host='', user='', passwd='', db=''):
+    def __init__(self, provider, host='', user='', passwd='', db=''):
 
-        self.db = MySQLdb.connect(host, user, passwd, db)
+        self.provider = provider
+
+        self.connections = {MySQLdb : self.get_mysql_connection,
+                            sqlite3 : self.get_sqlite_connection,
+                            psycopg2 : self.get_postgre_connection,}
+
+        self.connections[provider](host, user, passwd, db)
         self.cursor = self.db.cursor()
+
+        self.providers = {MySQLdb : self.get_mysql_columns,
+                          sqlite3 : self.get_sqlite_columns,
+                          psycopg2 : self.get_postgre_columns,}
+
+    def get_mysql_connection(self, host='', user='', passwd='', db=''):
+        self.db = self.provider.connect(host=host, user=user, passwd=passwd, db=db)
+
+    def get_postgre_connection(self, host='', user='', passwd='', db=''):
+        self.db = self.provider.connect(host=host, user=user, password=passwd, database=db)
+
+    def get_sqlite_connection(self, host='', user='', passwd='', db=''):
+        self.db = self.provider.connect(db)
+
+    def get_mysql_columns(self, name):
+
+        self.sql_rows = 'Select * From %s' % name
+        sql_columns = "describe %s" % name
+        self.cursor.execute(sql_columns)
+        return [row[0] for row in self.cursor.fetchall()]
+
+    def get_sqlite_columns(self, name):
+
+        self.sql_rows = 'Select * From %s' % name
+        sql_columns = "PRAGMA table_info(%s)" % name
+        self.cursor.execute(sql_columns)
+        return [row[1] for row in self.cursor.fetchall()]
+
+    def get_postgre_columns(self, name):
+
+        self.sql_rows = 'Select * From "%s"' % name
+        sql_columns = """select column_name
+                        from information_schema.columns
+                        where table_name = '%s';""" % name
+        self.cursor.execute(sql_columns)
+        return [row[0] for row in self.cursor.fetchall()]
 
     def Table(self, name):
 
-        return Table(name, self.cursor)
+        columns = self.providers[self.provider](name)
+        return Query(self.cursor, self.sql_rows, columns, name)
 
 
-class Table(object):
+class Query(object):
 
-    def __init__(self, name, cursor):
-
-        self.name = name
+    def __init__(self, cursor, sql_rows, columns, name):
         self.cursor = cursor
-
-        cursor.execute("describe %s" % name)
-        self.columns = [row[0] for row in cursor.fetchall()]
-
-        self.sql = "Select * From %s" % name
+        self.sql_rows = sql_rows
+        self.columns = columns
+        self.name = name
 
     def filter(self, criteria):
-        return RowList(self, self.sql).filter(criteria)
 
-
-class RowList(list):
-
-    def get_rows(self):
-        print self.sql
-        self.table.cursor.execute(self.sql)
-        return [Row(self.table.columns, fields, self.table.name) for fields in self.table.cursor.fetchall()]
-
-    rows = property(get_rows)
-
-    def __init__(self, table, sql):
-        self.sql = sql
-        self.table = table
-
-    def filter(self, criteria):
-        if "WHERE" in self.sql:
-            key_word = "AND"
-        else:
-            key_word = "WHERE"
-        sql = self.sql + " %s %s" % (key_word, criteria)
-        return RowList(self.table, sql)
+        key_word = "AND" if "WHERE" in self.sql_rows else "WHERE"
+        sql = self.sql_rows + " %s %s" % (key_word, criteria)
+        return Query(self.cursor, sql, self.columns, self.name)
 
     def order_by(self, criteria):
-        return RowList(self.table, self.sql + " ORDER BY %s" % criteria)
+        return Query(self.cursor, self.sql_rows + " ORDER BY %s" % criteria, self.columns, self.name)
 
     def group_by(self, criteria):
-        return RowList(self.table, self.sql + " GROUP BY %s" % criteria)
+        return Query(self.cursor, self.sql_rows + " GROUP BY %s" % criteria, self.columns, self.name)
+
+    def get_rows(self):
+        print self.sql_rows
+        columns = self.columns
+        self.cursor.execute(self.sql_rows)
+        return [Row(zip(columns, fields), self.name) for fields in self.cursor.fetchall()]
+
+    rows = property(get_rows)
 
 
 class Row(object):
 
-    def __init__(self, names, fields, table_name):
+    def __init__(self, fields, table_name):
 
-        self.__class__.__name__ = table_name
+        self.__class__.__name__ = table_name + "_Row"
 
-        i = 0
-        for name in names:
-            setattr(self, name, fields[i])
-            i += 1
+        for name, value in fields:
+            setattr(self, name, value)
 

@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
+"""
+    This is a very simple Object relational mapper (ORM)
+    Use this code for fun. It isn't tested on a lot of cases.
 
-import MySQLdb
-import sqlite3
-import psycopg2
+    Author: Juan Manuel García <jmg.utn@gmail.com>
+"""
 
 class DataBase(object):
     """
@@ -27,16 +29,16 @@ class DataBase(object):
 
         self.provider = provider
 
-        self.connections = {MySQLdb : self.get_mysql_connection,
-                            sqlite3 : self.get_sqlite_connection,
-                            psycopg2 : self.get_postgre_connection,}
+        self.connections = {"MySQLdb" : self.get_mysql_connection,
+                            "sqlite3" : self.get_sqlite_connection,
+                            "psycopg2" : self.get_postgre_connection,}
 
-        self.connections[provider](host, user, passwd, db)
+        self.connections[self.provider.__name__](host, user, passwd, db)
         self.cursor = self.db.cursor()
 
-        self.providers = {MySQLdb : self.get_mysql_columns,
-                          sqlite3 : self.get_sqlite_columns,
-                          psycopg2 : self.get_postgre_columns,}
+        self.providers = {"MySQLdb" : self.get_mysql_columns,
+                          "sqlite3" : self.get_sqlite_columns,
+                          "psycopg2" : self.get_postgre_columns,}
 
     def get_mysql_connection(self, host='', user='', passwd='', db=''):
         """
@@ -93,7 +95,7 @@ class DataBase(object):
 
             return: a Query object
         """
-        columns = self.providers[self.provider](name)
+        columns = self.providers[self.provider.__name__](name)
         return Query(self.cursor, self.sql_rows, columns, name)
 
 

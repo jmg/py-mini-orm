@@ -6,13 +6,16 @@ import psycopg2
 
 from core import DataBase
 
-db = DataBase(provider=psycopg2, host='localhost',user='jm', passwd='root',db='jm')
-db = DataBase(provider=MySQLdb, host='localhost',user='root', passwd='root',db='jm')
-#db = DataBase(provider=sqlite3, db='jm.db')
+#db = DataBase(provider=psycopg2, host='localhost',user='jm', passwd='root',db='jm')
+#db = DataBase(provider=MySQLdb, host='localhost',user='root', passwd='root',db='jm')
+db = DataBase(provider=sqlite3, db='MusicaInYou.db')
 
-print [u.name for u in db.Table("Person").filter("age > 15").
-       filter("name = 'jm'").order_by("name").rows]
+print [u.album for u in db.Table("Songs").filter("id > 15").
+       filter("year = 2000").order_by("song").rows]
 
-print [u.name for u in db.Table("Person").rows]
+print [u.song for u in db.Table("Songs").filter("id = 1").rows]
 
-print [c for c in db.Table("Person").columns]
+print [c for c in db.Table("Songs").columns]
+
+
+[u'essential selection vol. one', u'The Beatles 1', u'Please']

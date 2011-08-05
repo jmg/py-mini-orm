@@ -146,15 +146,13 @@ class Row(object):
         A row Class dynamically implemented for each table
     """
 
-    def __init__(self, fields, table_name):
+    def __new__(cls, fields, table_name):
         """
             fields: A list of [column_name : value of column]
 
             table_name: the name of the table
         """
-        #Assign the name of the current table to the class
-        self.__class__.__name__ = table_name + "_Row"
-
+        obj = type(table_name, (object, ), {})
         for name, value in fields:
-            setattr(self, name, value)
-
+            setattr(obj, name, value)
+        return obj

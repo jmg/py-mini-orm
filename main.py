@@ -12,7 +12,11 @@ db = DataBase(provider=sqlite3, db='jm.db')
 
 print [u.name for u in db.Table("Person").filter("id > 0").filter("name = 'jm'").order_by("name").rows]
 
-print [u for u in db.Table("Person").filter("id = 1").rows]
+persons = [u for u in db.Table("Person").filter("age > 10").rows]
 
 print [c for c in db.Table("Person").columns]
+
+print [c for c in db.Table("Animal").rows]
+
+print persons
 
